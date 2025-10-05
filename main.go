@@ -87,7 +87,8 @@ func (m maiContainer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "shift+tab", "k", "up":
 			m.focusPanel--
-			if m.focusPanel < langPanel {
+			// we use > instead of < because focusPanel is an unsigned int and will wrap around to max value
+			if m.focusPanel > snippetPanel {
 				m.focusPanel = snippetPanel
 			}
 		}
