@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/kaputi/snippets/container"
 	"github.com/kaputi/snippets/content"
 	"github.com/kaputi/snippets/lang"
 	"github.com/kaputi/snippets/logger"
@@ -22,45 +23,21 @@ const (
 	contentPanel
 )
 
-type column struct {
-	content string
-}
-
-func (c column) Init() tea.Cmd {
-	return nil
-}
-
-func (c column) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return c, nil
-}
-
-func (c column) SetContent(content string) {
-	c.content = content
-}
-
-func (c column) View() string {
-	return c.content
-}
-
-func newColumn() column {
-	return column{content: ""}
-}
-
-type maiContainer struct {
+type mainModel struct {
 	focusPanel   focusState
-	leftColumn   column
-	rightColumn  column
+	leftColumn   container.Model
+	rightColumn  container.Model
 	langModel    lang.Model
 	treeModel    tree.Model
 	snippetModel snippet.Model
 	contentModel content.Model
 }
 
-func newModel() maiContainer {
-	return maiContainer{
+func newMainModel() mainModel {
+	return mainModel{
 		focusPanel:   0,
-		leftColumn:   newColumn(),
-		rightColumn:  newColumn(),
+		leftColumn:   container.New(),
+		rightColumn:  container.New(),
 		langModel:    lang.NewModel(),
 		treeModel:    tree.NewModel(),
 		snippetModel: snippet.NewModel(),
@@ -68,12 +45,16 @@ func newModel() maiContainer {
 	}
 }
 
-func (m maiContainer) Init() tea.Cmd {
-	return tea.Batch(m.langModel.Init(), m.treeModel.Init(), m.snippetModel.Init(), m.contentModel.Init())
+func (m mainModel) Init() tea.Cmd {
+	return tea.Batch(
+		m.langModel.Init(),
+		m.treeModel.Init(),
+		m.snippetModel.Init(),
+		m.contentModel.Init(),
+	)
 }
 
-func (m maiContainer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// var cmd tea.Cmd
+func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -97,7 +78,7 @@ func (m maiContainer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m maiContainer) View() string {
+func (m mainModel) View() string {
 
 	langStyle := theme.LangPanelStyle
 	treeStyle := theme.TreePanelStyle
@@ -120,7 +101,7 @@ func (m maiContainer) View() string {
 	m.leftColumn.SetContent(leftContent)
 
 	rightContent := theme.ContentPanelStyle.Render(m.contentModel.View())
-	m.rightColumn.SetContent("aaaaaaaaaaaa")
+	m.rightColumn.SetContent(rightContent)
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)
 
@@ -137,7 +118,7 @@ func main() {
 
 	theme.Init()
 
-	p := tea.NewProgram(newModel(), tea.WithAltScreen())
+	p := tea.NewProgram(newMainModel(), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)

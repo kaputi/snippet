@@ -63,7 +63,7 @@ func updateStyle() {
 	yOffset := 2 + navPanelPadding[0]*2
 
 	navPanelWidth := int(float32(TermWidth)*navPanelWidthPercent) - xOffset
-	navPanelHeight := int((float32(TermHeight))*0.3) - xOffset
+	navPanelHeight := int((float32(TermHeight))*0.3) - yOffset
 
 	LangPanelHeight = navPanelHeight
 	TreePanelHeight = navPanelHeight
