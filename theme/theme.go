@@ -20,9 +20,14 @@ var colors = map[string]string{
 	"selected":   "#008000",
 }
 
+// theme variables
 var (
-	navPanelWidthPercent float32 = 0.3
+	navPanelWidthPercent float32 = 0.25
+	navPanelPadding      [2]int  = [2]int{0, 1}
+)
 
+// calculated variable
+var (
 	TermWidth  int
 	TermHeight int
 
@@ -42,7 +47,7 @@ var (
 	ContentPanelStyle lipgloss.Style
 )
 
-func init() {
+func Init() {
 	updateStyle()
 	go watchWindowResize()
 }
@@ -53,20 +58,23 @@ func updateStyle() {
 	TermWidth = width
 	TermHeight = height
 
-	leftColumnWidth := int(float32(TermWidth) * navPanelWidthPercent)
-	navPanelHeight := int((float32(TermHeight - 2)) * 0.3) // -2 for the border
-	navPanelWidth := leftColumnWidth
+	// NOTE:  style widths dont include padding and border
+	xOffset := 2 + navPanelPadding[1]*2
+	yOffset := 2 + navPanelPadding[0]*2
+
+	navPanelWidth := int(float32(TermWidth)*navPanelWidthPercent) - xOffset
+	navPanelHeight := int((float32(TermHeight))*0.3) - xOffset
 
 	LangPanelHeight = navPanelHeight
 	TreePanelHeight = navPanelHeight
-	SnippetPanelHeight = TermHeight - 2 - LangPanelHeight - TreePanelHeight
+	SnippetPanelHeight = TermHeight - LangPanelHeight - TreePanelHeight - yOffset*3
 
-	ContentPanelWidth = TermWidth - navPanelWidth
-	ContentPanelHeight = navPanelHeight * 3
+	ContentPanelWidth = TermWidth - navPanelWidth - xOffset
+	ContentPanelHeight = LangPanelHeight + TreePanelHeight + SnippetPanelHeight + yOffset*2
 
 	PanelStyle = lipgloss.NewStyle().
 		Margin(0, 0).
-		Padding(0, 1).
+		Padding(navPanelPadding[0], navPanelPadding[1]).
 		Border(lipgloss.RoundedBorder())
 
 	LangPanelStyle = PanelStyle.Width(navPanelWidth).Height(LangPanelHeight)

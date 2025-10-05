@@ -134,6 +134,8 @@ func main() {
 
 	logger.Log("Application started")
 
+	theme.Init()
+
 	p := tea.NewProgram(newModel(), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
