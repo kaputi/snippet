@@ -21,29 +21,25 @@ var colors = map[string]string{
 }
 
 var (
-	termWidth  int
-	termHeight int
-
 	navPanelWidthPercent float32 = 0.3
-	navPanelWidth        int
-	navPanelHeight       int
 
-	contentPanelWidth  int
-	contentPanelHeight int
+	TermWidth  int
+	TermHeight int
 
-	panelStyle = lipgloss.NewStyle().
-			Margin(0, 0).
-			Padding(0, 1).
-			Border(lipgloss.RoundedBorder())
+	NavPanelWidth int
 
-	leftColumnStyle  lipgloss.Style
-	rightColumnStyle lipgloss.Style
+	LangPanelHeight    int
+	TreePanelHeight    int
+	SnippetPanelHeight int
 
-	navPanelStyle     lipgloss.Style
-	contentPanelStyle lipgloss.Style
+	ContentPanelWidth  int
+	ContentPanelHeight int
 
-	focusedNavPanelStyle     lipgloss.Style
-	focusedContentPanelStyle lipgloss.Style
+	PanelStyle        lipgloss.Style
+	LangPanelStyle    lipgloss.Style
+	TreePanelStyle    lipgloss.Style
+	SnippetPanelStyle lipgloss.Style
+	ContentPanelStyle lipgloss.Style
 )
 
 func init() {
@@ -53,36 +49,30 @@ func init() {
 
 func updateStyle() {
 	width, height := getTermSize()
-	accentColor, _ := Color("accent")
 
-	termWidth = width
-	termHeight = height
+	TermWidth = width
+	TermHeight = height
 
-	leftColumnWidth := int(float32(termWidth) * navPanelWidthPercent)
+	leftColumnWidth := int(float32(TermWidth) * navPanelWidthPercent)
+	navPanelHeight := int((float32(TermHeight - 2)) * 0.3) // -2 for the border
+	navPanelWidth := leftColumnWidth
 
-	leftColumnStyle = lipgloss.NewStyle().
-		Width(leftColumnWidth).
-		Height(termHeight)
+	LangPanelHeight = navPanelHeight
+	TreePanelHeight = navPanelHeight
+	SnippetPanelHeight = TermHeight - 2 - LangPanelHeight - TreePanelHeight
 
-	rightColumnStyle = lipgloss.NewStyle().
-		Width(termWidth - leftColumnWidth).
-		Height(termHeight)
+	ContentPanelWidth = TermWidth - navPanelWidth
+	ContentPanelHeight = navPanelHeight * 3
 
-	navPanelWidth = int(leftColumnWidth)
-	navPanelHeight = int((float32(termHeight) - 2) * 0.3) // -2 for the border
+	PanelStyle = lipgloss.NewStyle().
+		Margin(0, 0).
+		Padding(0, 1).
+		Border(lipgloss.RoundedBorder())
 
-	contentPanelWidth = termWidth - navPanelWidth
-	contentPanelHeight = navPanelHeight * 3
-
-	navPanelStyle = panelStyle.Width(navPanelWidth).Height(navPanelHeight)
-	contentPanelStyle = panelStyle.Width(contentPanelWidth).Height(contentPanelHeight)
-
-	focusedNavPanelStyle = navPanelStyle.
-		BorderForeground(lipgloss.Color(accentColor))
-
-	focusedContentPanelStyle = contentPanelStyle.
-		BorderForeground(lipgloss.Color(accentColor))
-
+	LangPanelStyle = PanelStyle.Width(navPanelWidth).Height(LangPanelHeight)
+	TreePanelStyle = PanelStyle.Width(navPanelWidth).Height(TreePanelHeight)
+	SnippetPanelStyle = PanelStyle.Width(navPanelWidth).Height(SnippetPanelHeight)
+	ContentPanelStyle = PanelStyle.Width(ContentPanelWidth).Height(ContentPanelHeight)
 }
 
 func getTermSize() (int, int) {
@@ -110,26 +100,7 @@ func Color(name string) (string, error) {
 	return "", fmt.Errorf("color %s not found", name)
 }
 
-func NavPanel() lipgloss.Style {
-	return navPanelStyle
-}
-
-func ContentPanel() lipgloss.Style {
-	return contentPanelStyle
-}
-
-func FocusedNavPanel() lipgloss.Style {
-	return focusedNavPanelStyle
-}
-
-func FocusedContentPanel() lipgloss.Style {
-	return focusedContentPanelStyle
-}
-
-func LeftColumn() lipgloss.Style {
-	return leftColumnStyle
-}
-
-func RightColumn() lipgloss.Style {
-	return rightColumnStyle
+func FocusPanel(inputStyle lipgloss.Style) lipgloss.Style {
+	accentColor, _ := Color("accent")
+	return inputStyle.BorderForeground(lipgloss.Color(accentColor))
 }

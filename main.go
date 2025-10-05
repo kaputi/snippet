@@ -18,7 +18,7 @@ type focusState uint
 const (
 	langPanel focusState = iota
 	treePanel
-	snipeetPanel
+	snippetPanel
 	contentPanel
 )
 
@@ -82,13 +82,13 @@ func (m maiContainer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "tab", "j", "down":
 			m.focusPanel++
-			if m.focusPanel > snipeetPanel {
+			if m.focusPanel > snippetPanel {
 				m.focusPanel = langPanel
 			}
 		case "shift+tab", "k", "up":
-			m.focusPanel++
-			if m.focusPanel > snipeetPanel {
-				m.focusPanel = langPanel
+			m.focusPanel--
+			if m.focusPanel < langPanel {
+				m.focusPanel = snippetPanel
 			}
 		}
 	}
@@ -98,34 +98,27 @@ func (m maiContainer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m maiContainer) View() string {
 
-	// leftColumnStyle := theme.LeftColumn()
-	// rightColumnSyle := theme.RightColumn()
-	navPanelStyle := theme.NavPanel()
-	focusedNavPanelStyle := theme.FocusedNavPanel()
-
-	contentPanelStyle := theme.ContentPanel()
-
-	var langString, treeString, snippetString string
+	langStyle := theme.LangPanelStyle
+	treeStyle := theme.TreePanelStyle
+	snippetStyle := theme.SnippetPanelStyle
 
 	switch m.focusPanel {
 	case langPanel:
-		langString = focusedNavPanelStyle.Render(m.langModel.View())
-		treeString = navPanelStyle.Render(m.treeModel.View())
-		snippetString = navPanelStyle.Render(m.snippetModel.View())
+		langStyle = theme.FocusPanel(langStyle)
 	case treePanel:
-		langString = navPanelStyle.Render(m.langModel.View())
-		treeString = focusedNavPanelStyle.Render(m.treeModel.View())
-		snippetString = navPanelStyle.Render(m.snippetModel.View())
-	case snipeetPanel:
-		langString = navPanelStyle.Render(m.langModel.View())
-		treeString = navPanelStyle.Render(m.treeModel.View())
-		snippetString = focusedNavPanelStyle.Render(m.snippetModel.View())
+		treeStyle = theme.FocusPanel(treeStyle)
+	case snippetPanel:
+		snippetStyle = theme.FocusPanel(snippetStyle)
 	}
+
+	langString := langStyle.Render(m.langModel.View())
+	treeString := treeStyle.Render(m.treeModel.View())
+	snippetString := snippetStyle.Render(m.snippetModel.View())
 
 	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, treeString, snippetString)
 	m.leftColumn.SetContent(leftContent)
 
-	rightContent := contentPanelStyle.Render(m.contentModel.View())
+	rightContent := theme.ContentPanelStyle.Render(m.contentModel.View())
 	m.rightColumn.SetContent("aaaaaaaaaaaa")
 
 	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)
