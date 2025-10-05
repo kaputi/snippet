@@ -1,77 +1,135 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/kaputi/snippets/content"
+	"github.com/kaputi/snippets/lang"
 	"github.com/kaputi/snippets/logger"
+	"github.com/kaputi/snippets/snippet"
+	"github.com/kaputi/snippets/theme"
+	"github.com/kaputi/snippets/tree"
 )
 
-type model struct {
-	choices  []string
-	cursor   int
-	selected map[int]struct{}
+type focusState uint
+
+const (
+	langPanel focusState = iota
+	treePanel
+	snipeetPanel
+	contentPanel
+)
+
+type column struct {
+	content string
 }
 
-func initialModel() model {
-	return model{
-		choices:  []string{"Choice 1", "Choice 2", "Choice 3", "Choice 4"},
-		selected: make(map[int]struct{}),
-	}
-}
-
-func (m model) Init() tea.Cmd {
+func (c column) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (c column) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return c, nil
+}
+
+func (c column) SetContent(content string) {
+	c.content = content
+}
+
+func (c column) View() string {
+	return c.content
+}
+
+func newColumn() column {
+	return column{content: ""}
+}
+
+type maiContainer struct {
+	focusPanel   focusState
+	leftColumn   column
+	rightColumn  column
+	langModel    lang.Model
+	treeModel    tree.Model
+	snippetModel snippet.Model
+	contentModel content.Model
+}
+
+func newModel() maiContainer {
+	return maiContainer{
+		focusPanel:   0,
+		leftColumn:   newColumn(),
+		rightColumn:  newColumn(),
+		langModel:    lang.NewModel(),
+		treeModel:    tree.NewModel(),
+		snippetModel: snippet.NewModel(),
+		contentModel: content.NewModel(),
+	}
+}
+
+func (m maiContainer) Init() tea.Cmd {
+	return tea.Batch(m.langModel.Init(), m.treeModel.Init(), m.snippetModel.Init(), m.contentModel.Init())
+}
+
+func (m maiContainer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// var cmd tea.Cmd
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
+		case "tab", "j", "down":
+			m.focusPanel++
+			if m.focusPanel > snipeetPanel {
+				m.focusPanel = langPanel
 			}
-
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-				m.selected[m.cursor] = struct{}{}
+		case "shift+tab", "k", "up":
+			m.focusPanel++
+			if m.focusPanel > snipeetPanel {
+				m.focusPanel = langPanel
 			}
 		}
 	}
 
-	return m, nil
+	return m, tea.Batch(cmds...)
 }
 
-func (m model) View() string {
-	s := "Select your choices (press q to quit):\n\n"
+func (m maiContainer) View() string {
 
-	for i, choice := range m.choices {
-		cursor := " " // no cursor
-		if m.cursor == i {
-			cursor = ">" // cursor
-		}
+	// leftColumnStyle := theme.LeftColumn()
+	// rightColumnSyle := theme.RightColumn()
+	navPanelStyle := theme.NavPanel()
+	focusedNavPanelStyle := theme.FocusedNavPanel()
 
-		checked := "[ ]" // not selected
-		if _, ok := m.selected[i]; ok {
-			checked = "[x]" // selected
-		}
+	contentPanelStyle := theme.ContentPanel()
 
-		s += fmt.Sprintf("%s %s %s\n", cursor, checked, choice)
+	var langString, treeString, snippetString string
+
+	switch m.focusPanel {
+	case langPanel:
+		langString = focusedNavPanelStyle.Render(m.langModel.View())
+		treeString = navPanelStyle.Render(m.treeModel.View())
+		snippetString = navPanelStyle.Render(m.snippetModel.View())
+	case treePanel:
+		langString = navPanelStyle.Render(m.langModel.View())
+		treeString = focusedNavPanelStyle.Render(m.treeModel.View())
+		snippetString = navPanelStyle.Render(m.snippetModel.View())
+	case snipeetPanel:
+		langString = navPanelStyle.Render(m.langModel.View())
+		treeString = navPanelStyle.Render(m.treeModel.View())
+		snippetString = focusedNavPanelStyle.Render(m.snippetModel.View())
 	}
-	s += "\nPress enter or space to toggle selection.\n"
+
+	leftContent := lipgloss.JoinVertical(lipgloss.Top, langString, treeString, snippetString)
+	m.leftColumn.SetContent(leftContent)
+
+	rightContent := contentPanelStyle.Render(m.contentModel.View())
+	m.rightColumn.SetContent("aaaaaaaaaaaa")
+
+	s := lipgloss.JoinHorizontal(lipgloss.Top, leftContent, rightContent)
+
 	return s
 }
 
@@ -83,7 +141,7 @@ func main() {
 
 	logger.Log("Application started")
 
-	p := tea.NewProgram(initialModel())
+	p := tea.NewProgram(newModel(), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
